@@ -27,6 +27,8 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <system_error>
+
 void wtp_ansys::get(option opt, std::string src, std::string dst) {
     switch (opt) {
         case option::copy:
@@ -78,17 +80,17 @@ wtp_ansys::wtp_ansys() {
                 shell_file = ".zshrc";
             else
                 exit(1);
-            std::string win;
-            std::cout << "Enter WIN path: ";
-            std::cin >> win;
-            win_path = win;
+
             std::fstream file;
-            std::cout << "/home/" + user_name + "/" + shell_file << std::endl;
             try {
                 file.open("/home/" + user_name + "/" + shell_file,
-                          std::ios::app);
+                          std::ios::app | std::ios::out);
+
                 if (!file.is_open())
                     throw std::runtime_error("Error opening file");
+                std::cout << "/home/" + user_name + "/" + shell_file
+                          << " has opened!" << std::endl;
+
                 // Check if WIN is already set
                 std::string line;
                 while (std::getline(file, line)) {
@@ -97,12 +99,17 @@ wtp_ansys::wtp_ansys() {
                         exit(1);
                     }
                 }
+
+                std::string win;
+                std::cout << "Enter WIN path:";
+                std::cin >> win;
+                win_path = win;
+                file << "# WIN path\n";
                 // check win is right path
                 if (std::filesystem::exists(win)) {
                     std::cout << "WIN path exists" << std::endl;
                 } else {
-                    std::cout << "WIN path does not exist" << std::endl;
-                    exit(1);
+                    throw std::runtime_error("WIN path does not exist");
                 }
                 file << "export WIN=" << win << std::endl;
                 file.close();
@@ -113,8 +120,9 @@ wtp_ansys::wtp_ansys() {
         } else {
             exit(1);
         }
+    } else {
+        win_path = str;
     }
-    win_path = str;
 }
 
 void wtp_ansys::copy(std::string src, std::string dst) {
@@ -154,4 +162,12 @@ void wtp_ansys::help() {
     std::cout << "-c, --copy\t\tCopy file" << std::endl;
     std::cout << "-r, --remove\t\tRemove file" << std::endl;
 }
-void wtp_ansys::version() { std::cout << "wtp " << VERSION << std::endl; }
+void wtp_ansys::version() {
+    std::cout << "wtp " << VERSION << std::endl;
+    std::cout << "Copyright (C) 2024 Free Software Foundation, Inc.\n"
+                 "This is free software; see the source for copying "
+                 "conditions.  There is NO\n"
+                 "warranty; not even for MERCHANTABILITY or FITNESS FOR A "
+                 "PARTICULAR PURPOSE."
+              << std::endl;
+}
